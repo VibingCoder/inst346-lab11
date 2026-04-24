@@ -585,13 +585,15 @@ function blankData() {
 /* ═══════════════════════════════════════════
    SESSION KEY
 ═══════════════════════════════════════════ */
-function getSessionKey(forceHour) {
-  const now = new Date();
-  const d   = now.toISOString().slice(0, 10);
-  const h   = forceHour != null ? forceHour : now.getHours();
-  const slot = h < 10 ? '0900' : h < 11 ? '1000' : '1100';
-  const label = { '0900': '9:00 AM Section', '1000': '10:00 AM Section', '1100': '11:00 AM Section' }[slot];
-  return { key: `inst346_lab11_${d}_${slot}`, label, slot };
+function getSessionKey(forceSlot) {
+  const now   = new Date();
+  const d     = now.toISOString().slice(0, 10);
+  const SLOTS = ['0900','1000','1100'];
+  const slot  = SLOTS.includes(forceSlot)
+    ? forceSlot
+    : (now.getHours() < 10 ? '0900' : now.getHours() < 11 ? '1000' : '1100');
+  const labels = { '0900': '9:00 AM Section', '1000': '10:00 AM Section', '1100': '11:00 AM Section' };
+  return { key: `inst346_lab11_${d}_${slot}`, label: labels[slot], slot };
 }
 
 /* ═══════════════════════════════════════════
@@ -977,9 +979,9 @@ function renderAdmin() {
     <div class="admin-section">
       <div class="admin-section-label">Switch Session</div>
       <div class="session-tab-row">
-        <button class="session-tab ${state.slot==='0900'?'active':''}" onclick="switchSession(9)">9:00 AM</button>
-        <button class="session-tab ${state.slot==='1000'?'active':''}" onclick="switchSession(10)">10:00 AM</button>
-        <button class="session-tab ${state.slot==='1100'?'active':''}" onclick="switchSession(11)">11:00 AM</button>
+        <button class="session-tab ${state.slot==='0900'?'active':''}" onclick="switchSession('0900')">9:00 AM</button>
+        <button class="session-tab ${state.slot==='1000'?'active':''}" onclick="switchSession('1000')">10:00 AM</button>
+        <button class="session-tab ${state.slot==='1100'?'active':''}" onclick="switchSession('1100')">11:00 AM</button>
         <button class="session-tab ${!['0900','1000','1100'].includes(state.slot)?'active':''}" onclick="switchSession('auto')">Auto</button>
       </div>
     </div>
@@ -1021,9 +1023,9 @@ function renderAdmin() {
     </div>`;
 }
 
-async function switchSession(h) {
-  state.manualSession = (h !== 'auto');
-  const s = h === 'auto' ? getSessionKey() : getSessionKey(h);
+async function switchSession(slot) {
+  state.manualSession = (slot !== 'auto');
+  const s = slot === 'auto' ? getSessionKey() : getSessionKey(slot);
   state.sessionKey = s.key; state.sessionLabel = s.label; state.slot = s.slot;
   await loadState();
   lastCardsHash = ''; lastActionHash = ''; lastHeaderState = '';
@@ -1104,11 +1106,10 @@ if (urlParams.get('board') === '1') {
 ═══════════════════════════════════════════ */
 async function init() {
   // If a slot was passed in the URL (e.g. from TA's projector link), use it
-  const urlSlot = urlParams.get('slot');
-  const forceHour = urlSlot === '0900' ? 9 : urlSlot === '1000' ? 10 : urlSlot === '1100' ? 11 : null;
-  const s = getSessionKey(forceHour);
+  const urlSlot = urlParams.get('slot');  // e.g. '1000' or '1100'
+  const s = getSessionKey(urlSlot || null);
   state.sessionKey = s.key; state.sessionLabel = s.label; state.slot = s.slot;
-  if (forceHour !== null) state.manualSession = true;
+  if (urlSlot) state.manualSession = true;
 
   document.getElementById('admin-btn').onclick = openAdmin;
 
