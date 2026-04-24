@@ -568,6 +568,7 @@ let state = {
   data: blankData(),
   myGroup: null,
   connected: true,
+  manualSession: false, // true when TA has manually picked a session
 };
 
 // Hashes to track what actually changed — prevents unnecessary DOM rebuilds
@@ -908,7 +909,7 @@ function closeAdmin() { document.getElementById('admin-overlay').style.display =
 
 function renderAdmin() {
   const pageUrl     = window.location.href.split('?')[0];
-  const projUrl     = pageUrl + '?board=1';
+  const projUrl     = pageUrl + `?board=1&slot=${state.slot}`;
   const qrUrl       = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&bgcolor=161b22&color=f0f6fc&data=${encodeURIComponent(pageUrl)}`;
 
   // Build placed / unplaced
@@ -1021,6 +1022,7 @@ function renderAdmin() {
 }
 
 async function switchSession(h) {
+  state.manualSession = (h !== 'auto');
   const s = h === 'auto' ? getSessionKey() : getSessionKey(h);
   state.sessionKey = s.key; state.sessionLabel = s.label; state.slot = s.slot;
   await loadState();
@@ -1092,7 +1094,8 @@ function toast(msg, kind = 'ok') {
 /* ═══════════════════════════════════════════
    PROJECTION MODE
 ═══════════════════════════════════════════ */
-if (new URLSearchParams(window.location.search).get('board') === '1') {
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('board') === '1') {
   document.body.classList.add('projector');
 }
 
@@ -1100,8 +1103,12 @@ if (new URLSearchParams(window.location.search).get('board') === '1') {
    INIT + POLL LOOP
 ═══════════════════════════════════════════ */
 async function init() {
-  const s = getSessionKey();
+  // If a slot was passed in the URL (e.g. from TA's projector link), use it
+  const urlSlot = urlParams.get('slot');
+  const forceHour = urlSlot === '0900' ? 9 : urlSlot === '1000' ? 10 : urlSlot === '1100' ? 11 : null;
+  const s = getSessionKey(forceHour);
   state.sessionKey = s.key; state.sessionLabel = s.label; state.slot = s.slot;
+  if (forceHour !== null) state.manualSession = true;
 
   document.getElementById('admin-btn').onclick = openAdmin;
 
@@ -1109,12 +1116,14 @@ async function init() {
   render();
 
   setInterval(async () => {
-    // Auto-switch session when the clock crosses the hour boundary
-    const cs = getSessionKey();
-    if (cs.key !== state.sessionKey) {
-      state.sessionKey = cs.key; state.sessionLabel = cs.label; state.slot = cs.slot;
-      state.myGroup = null;
-      lastCardsHash = ''; lastActionHash = ''; lastHeaderState = '';
+    // Only auto-switch on natural hour boundary — never override a manual TA session pick
+    if (!state.manualSession) {
+      const cs = getSessionKey();
+      if (cs.key !== state.sessionKey) {
+        state.sessionKey = cs.key; state.sessionLabel = cs.label; state.slot = cs.slot;
+        state.myGroup = null;
+        lastCardsHash = ''; lastActionHash = ''; lastHeaderState = '';
+      }
     }
     await loadState();
     render();
