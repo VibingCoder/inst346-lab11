@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>INST346 Lab 12 \u2014 Group Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--raised:#1c2230;--border:#30363d;--border2:#40505e;--txt:#f0f6fc;--txt2:#8b949e;--txt3:#484f58;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--amber:#e3b341;--r-tel:#58a6ff;--r-tel-bg:rgba(88,166,255,.12);--r-cmp:#3fb950;--r-cmp-bg:rgba(63,185,80,.12);--r-net:#bc8cff;--r-net-bg:rgba(188,140,255,.12);--r-cld:#ffa657;--r-cld-bg:rgba(255,166,87,.12);--radius:12px;--radius-lg:18px;--radius-xl:24px;--tr:all .22s cubic-bezier(.4,0,.2,1);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--txt);font-family:'Outfit',system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 50% at 10% -10%,rgba(88,166,255,.06) 0%,transparent 60%);}
+.view{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:24px 16px 80px;opacity:0;pointer-events:none;transform:translateY(16px);transition:opacity .3s,transform .3s;}
+.view.active{opacity:1;pointer-events:all;transform:translateY(0);}
+.view.out{opacity:0;transform:translateY(-16px);transition:opacity .2s,transform .2s;}
+.inner{width:100%;max-width:600px;}
+.topbar{width:100%;max-width:600px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.logo .eye{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);}
+.logo h1{font-size:20px;font-weight:800;letter-spacing:-.02em;}
+.live-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;background:var(--surface);border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--txt2);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+.dot.off{background:var(--txt3);animation:none;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,185,80,.7);}70%{box-shadow:0 0 0 8px rgba(63,185,80,0);}100%{box-shadow:0 0 0 0 rgba(63,185,80,0);}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px;margin-bottom:14px;}
+.card-sm{padding:14px;border-radius:var(--radius-lg);}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px;}
+.tag.accent{color:var(--accent);}.tag.green{color:var(--green);}.tag.amber{color:var(--amber);}.tag.red{color:var(--red);}
+.hero{font-size:28px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin-bottom:8px;}
+.sub{font-size:14px;color:var(--txt2);line-height:1.5;}
+.field{width:100%;padding:18px 20px;background:var(--raised);border:1.5px solid var(--border2);border-radius:var(--radius-lg);color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.05em;outline:none;text-align:center;transition:border-color .15s;-webkit-appearance:none;appearance:none;}
+.field:focus{border-color:var(--accent);}
+.field::placeholder{color:var(--txt3);font-size:15px;font-weight:400;letter-spacing:0;}
+.field::-webkit-outer-spin-button,.field::-webkit-inner-spin-button{-webkit-appearance:none;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 22px;border-radius:var(--radius-lg);font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;border:1.5px solid transparent;cursor:pointer;width:100%;transition:var(--tr);user-select:none;}
+.btn-primary{background:var(--accent);color:#03090f;border-color:var(--accent);}
+.btn-primary:hover{background:#79baff;}
+.btn-primary:active{transform:scale(.97);}
+.btn-ghost{background:transparent;color:var(--txt2);border-color:var(--border);}
+.btn-ghost:hover{background:var(--raised);color:var(--txt);}
+.btn-danger{background:transparent;color:var(--red);border-color:rgba(248,81,73,.35);}
+.btn-danger:hover{background:rgba(248,81,73,.1);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-sm{padding:9px 14px;font-size:13px;border-radius:var(--radius);width:auto;}
+.id-card{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--raised);border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:18px;}
+.id-av{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#000;flex-shrink:0;}
+.id-name{font-size:15px;font-weight:700;}
+.id-meta{font-size:12px;color:var(--txt2);margin-top:2px;}
+.id-chip{margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;}
+.sec-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;background:rgba(88,166,255,.12);color:var(--accent);}
+.group-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.group-card{background:var(--raised);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:12px;cursor:pointer;transition:var(--tr);position:relative;overflow:hidden;}
+.group-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--r-tel),var(--r-cmp),var(--r-net),var(--r-cld));opacity:.4;}
+.group-card:hover:not(.full){border-color:var(--accent);background:rgba(88,166,255,.05);transform:translateY(-1px);}
+.group-card.has-expert{border-color:rgba(88,166,255,.45);}
+.group-card.has-expert::before{opacity:1;}
+.group-card.full{opacity:.45;cursor:not-allowed;}
+.group-card.full::before{background:var(--txt3);}
+.gc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.gc-num{font-size:18px;font-weight:900;letter-spacing:-.02em;}
+.gc-count{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt3);}
+.gc-slot{display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0;}
+.gc-bar{width:3px;height:12px;border-radius:2px;flex-shrink:0;}
+.gc-icon{font-size:12px;flex-shrink:0;width:16px;text-align:center;}
+.gc-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;}
+.gc-name.empty{color:var(--txt3);font-style:italic;font-weight:400;}
+.gc-name.expert-open{color:var(--accent);font-style:italic;font-weight:600;}
+.slot-list{display:flex;flex-direction:column;gap:8px;}
+.slot-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius-lg);border:1.5px solid var(--border);background:var(--raised);transition:var(--tr);position:relative;}
+.slot-row.open-slot{cursor:pointer;}
+.slot-row.open-slot:hover{transform:translateX(3px);}
+.slot-row.taken{opacity:.5;cursor:not-allowed;}
+.slot-row.expert{border-color:var(--rc,var(--accent));}
+.slot-row.expert::after{content:'YOUR EXPERTISE';position:absolute;top:-1px;right:10px;padding:2px 7px;border-radius:0 0 5px 5px;background:var(--rc);color:#000;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;}
+.slot-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.slot-role{font-size:14px;font-weight:700;}
+.slot-person{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txt2);margin-top:2px;}
+.conf-emoji{font-size:64px;text-align:center;margin-bottom:12px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes popIn{from{transform:scale(.3);opacity:0;}to{transform:scale(1);opacity:1;}}
+.conf-num{font-size:72px;font-weight:900;letter-spacing:-.04em;line-height:1;text-align:center;}
+.member-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+.banner{padding:14px 18px;border-radius:var(--radius-lg);margin-bottom:14px;border:1.5px solid;}
+.banner.amber{background:rgba(227,179,65,.08);border-color:rgba(227,179,65,.4);}
+.banner.red{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.4);}
+.banner-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.banner-sub{font-size:13px;color:var(--txt2);}
+/* PROJECTOR */
+body.projector{overflow:hidden;}
+body.projector .view{padding:0;}
+body.projector #view-landing,body.projector #view-identify,body.projector #view-pick-role,body.projector #view-confirmed,body.projector #view-error{display:none;}
+body.projector #view-board{display:flex;flex-direction:row!important;align-items:stretch;padding:0;}
+body.projector footer,body.projector #admin-btn{display:none;}
+.proj-main{flex:1;padding:20px 16px 20px 24px;overflow:hidden;display:flex;flex-direction:column;}
+.proj-sidebar{width:230px;flex-shrink:0;padding:20px 16px;display:flex;flex-direction:column;gap:12px;background:rgba(22,27,34,.95);border-left:1px solid var(--border);}
+.proj-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;flex:1;}
+.proj-card{background:var(--raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--r-tel),var(--r-cmp),var(--r-net),var(--r-cld));}
+.proj-card-num{font-size:16px;font-weight:900;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.proj-slot{display:flex;align-items:center;gap:5px;font-size:11px;padding:1px 0;line-height:1.4;}
+.proj-slot-icon{font-size:11px;flex-shrink:0;width:14px;}
+.proj-slot-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.proj-slot-name.empty{color:var(--txt3);font-style:italic;}
+.proj-stat{background:var(--raised);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.proj-stat-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txt3);margin-bottom:3px;}
+.proj-stat-val{font-size:20px;font-weight:800;}
+.proj-qr{background:var(--raised);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;}
+.proj-qr img{width:100%;border-radius:6px;display:block;}
+.proj-qr-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--txt3);margin-top:6px;word-break:break-all;}
+/* ADMIN */
+.overlay{position:fixed;inset:0;z-index:100;background:rgba(1,4,9,.88);backdrop-filter:blur(10px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px 40px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xl);width:100%;max-width:640px;padding:28px;transform:translateY(20px);transition:transform .25s;}
+.overlay.open .modal{transform:translateY(0);}
+.atabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+.atab{padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border:1.5px solid var(--border);color:var(--txt2);background:transparent;transition:var(--tr);}
+.atab.active{background:var(--accent);border-color:var(--accent);color:#03090f;}
+.board-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--raised);border-radius:var(--radius);margin-bottom:4px;}
+.board-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#000;margin:2px 2px 2px 0;}
+.sel{width:100%;padding:11px 14px;background:var(--raised);border:1.5px solid var(--border2);border-radius:var(--radius);color:var(--txt);font-size:14px;outline:none;cursor:pointer;margin-bottom:8px;}
+.rf{flex:1;padding:11px 14px;background:var(--raised);border:1.5px solid var(--border2);border-radius:var(--radius);color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;outline:none;-webkit-appearance:none;appearance:none;}
+.rf::-webkit-outer-spin-button,.rf::-webkit-inner-spin-button{-webkit-appearance:none;}
+.qr-box{display:flex;gap:14px;align-items:center;padding:14px;background:var(--raised);border-radius:var(--radius-lg);}
+.qr-box img{width:110px;height:110px;border-radius:8px;}
+.qr-url{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txt2);word-break:break-all;flex:1;}
+.dz{padding:16px;background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.25);border-radius:var(--radius-lg);}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.sp{display:flex;flex-direction:column;gap:8px;}
+/* TOAST */
+#toasts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;z-index:9999;pointer-events:none;width:90vw;max-width:400px;}
+.toast{padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;background:var(--surface);border:1.5px solid var(--border2);color:var(--txt);animation:tIn .3s ease;text-align:center;}
+.toast.ok{border-color:var(--green);}.toast.err{border-color:var(--red);}.toast.warn{border-color:var(--amber);}
+@keyframes tIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+footer{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:7px 18px;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt3);z-index:10;}
+.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}.mb16{margin-bottom:16px;}
+.w100{width:100%;}.tc{text-align:center;}.flex{display:flex;}.gap8{gap:8px;}.aic{align-items:center;}.jb{justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<div id="view-landing" class="view active">
+  <div class="inner">
+    <div class="topbar">
+      <div class="logo"><div class="eye">INST346 \u00b7 Lab 12</div><h1>Group Formation</h1></div>
+      <div class="flex gap8 aic">
+        <div class="live-pill"><div id="dot-land" class="dot"></div>LIVE</div>
+        <button id="admin-btn" class="btn btn-ghost btn-sm" onclick="openAdmin()">\u2699 TA</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tag accent">Step 1 of 2</div>
+      <div class="hero">Enter your<br>Student UID</div>
+      <div class="sub mb12">Your 9-digit UID from Canvas \u2014 not your physical student ID card.</div>
+      <input id="uid-input" class="field" type="number" inputmode="numeric" placeholder="e.g. 119632895" autocomplete="off">
+      <div style="height:10px;"></div>
+      <button id="lookup-btn" class="btn btn-primary" onclick="lookupUID()">Find My Record \u2192</button>
+      <div id="land-err" class="sub mt8" style="color:var(--red);display:none;text-align:center;"></div>
+    </div>
+    <div class="card card-sm" style="border-color:rgba(88,166,255,.2);">
+      <div class="tag">\ud83d\udccc How it works</div>
+      <div class="sub">Enter your UID \u2192 we match your Lab 11 expertise \u2192 pick any group. Your expert slot is highlighted. If it\u2019s taken, you can join as a different role. Fastest finger first.</div>
+    </div>
+  </div>
+</div>
+
+<div id="view-identify" class="view">
+  <div class="inner">
+    <div class="topbar">
+      <div class="logo"><div class="eye">INST346 \u00b7 Lab 12</div><h1>Pick Your Group</h1></div>
+      <div class="live-pill"><div class="dot"></div>LIVE</div>
+    </div>
+    <div id="id-card" class="id-card"></div>
+    <div id="expert-full-banner"></div>
+    <div class="tag mb8">Step 2 of 2 \u2014 <span id="sec-label-board"></span></div>
+    <div id="group-grid" class="group-grid"></div>
+    <button class="btn btn-ghost" onclick="goTo('view-landing')">\u2190 Wrong UID?</button>
+  </div>
+</div>
+
+<div id="view-pick-role" class="view">
+  <div class="inner">
+    <div class="topbar">
+      <div class="logo"><div class="eye">INST346 \u00b7 Lab 12</div><h1>Pick a Role</h1></div>
+      <div class="live-pill"><div class="dot"></div>LIVE</div>
+    </div>
+    <div class="banner amber">
+      <div class="banner-title">\u26a0 Your expert slot is taken</div>
+      <div id="conflict-msg" class="banner-sub"></div>
+    </div>
+    <div class="tag mb8">Open slots in <span id="conflict-group-label" style="color:var(--txt);font-weight:700;"></span></div>
+    <div id="slot-list" class="slot-list"></div>
+    <button class="btn btn-ghost mt12" onclick="goTo('view-identify')">\u2190 Choose a different group</button>
+  </div>
+</div>
+
+<div id="view-confirmed" class="view">
+  <div class="inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;">
+    <div class="conf-emoji">\ud83c\udf89</div>
+    <div class="card w100 tc">
+      <div class="tag green tc mb8">You\u2019re locked in!</div>
+      <div id="conf-name" style="font-size:17px;font-weight:700;"></div>
+      <div id="conf-section" class="sub mb16"></div>
+      <div class="tag mb4">Your New Group</div>
+      <div id="conf-num" class="conf-num"></div>
+      <div id="conf-role" style="font-size:16px;font-weight:600;color:var(--txt2);margin-top:8px;"></div>
+      <div id="conf-switched" class="sub mt8" style="display:none;color:var(--amber);font-size:12px;"></div>
+      <div id="conf-members" class="mt12" style="background:var(--raised);border-radius:var(--radius);padding:14px;text-align:left;"></div>
+    </div>
+    <button class="btn btn-ghost mt12 w100" onclick="goTo('view-landing')">Done \u2713</button>
+  </div>
+</div>
+
+<div id="view-error" class="view">
+  <div class="inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;">
+    <div class="card w100 tc">
+      <div id="err-emoji" style="font-size:52px;margin-bottom:12px;"></div>
+      <div id="err-tag" class="tag tc mb8"></div>
+      <div id="err-msg" class="sub"></div>
+    </div>
+    <button class="btn btn-ghost mt12 w100" onclick="goTo('view-landing')">\u2190 Try again</button>
+  </div>
+</div>
+
+<div id="view-board" class="view" style="flex-direction:row;padding:0;">
+  <div class="proj-main">
+    <div class="flex jb aic" style="margin-bottom:14px;">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);">INST346 \u00b7 Lab 12</div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;">Group Board \u2014 <span id="board-title"></span></div>
+      </div>
+      <div class="live-pill"><div id="board-dot" class="dot"></div>LIVE</div>
+    </div>
+    <div id="proj-grid" class="proj-grid"></div>
+  </div>
+  <div class="proj-sidebar">
+    <div class="proj-qr">
+      <img id="proj-qr-img" src="" alt="QR Code">
+      <div class="proj-qr-label">Scan to join your group</div>
+      <div id="proj-qr-url" class="proj-qr-label" style="margin-top:4px;font-size:8px;"></div>
+    </div>
+    <div class="proj-stat">
+      <div class="proj-stat-label">Students Placed</div>
+      <div id="proj-placed" class="proj-stat-val">0 / 0</div>
+    </div>
+    <div class="proj-stat">
+      <div class="proj-stat-label">Full Groups</div>
+      <div id="proj-full" class="proj-stat-val">0 / 10</div>
+    </div>
+    <div class="proj-stat">
+      <div class="proj-stat-label">Section</div>
+      <div id="proj-section" class="proj-stat-val" style="font-size:16px;">--</div>
+    </div>
+  </div>
+</div>
+
+<div id="admin-overlay" class="overlay" onclick="if(event.target===this)closeAdmin()">
+  <div class="modal">
+    <div class="flex jb aic mb8">
+      <div style="font-size:20px;font-weight:800;">TA Admin Panel</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeAdmin()">\u2715</button>
+    </div>
+    <div class="sub mb12">INST346 Lab 12 \u00b7 Dr. Frezzo</div>
+    <div class="atabs">
+      <button class="atab active" onclick="adminTab('board')">\ud83d\udccb Board</button>
+      <button class="atab" onclick="adminTab('assign')">\ud83d\udc64 Assign</button>
+      <button class="atab" onclick="adminTab('remove')">\ud83d\uddd1 Remove</button>
+      <button class="atab" onclick="adminTab('proj')">\ud83d\udcfa Projector</button>
+      <button class="atab" onclick="adminTab('danger')">\u26a0 Reset</button>
+    </div>
+    <div id="atab-board">
+      <div class="atabs mb12">
+        <button class="atab active" id="abs-0101" onclick="adminBoardSec('0101')">0101</button>
+        <button class="atab" id="abs-0102" onclick="adminBoardSec('0102')">0102</button>
+        <button class="atab" id="abs-0103" onclick="adminBoardSec('0103')">0103</button>
+      </div>
+      <div id="admin-board-content"></div>
+    </div>
+    <div id="atab-assign" style="display:none;">
+      <div class="tag mb8">Assign / Override Student</div>
+      <div class="sub mb12">For cross-section students or manual placements. Look up by UID then set section, group, and role.</div>
+      <input id="assign-uid" class="field" type="number" inputmode="numeric" placeholder="Student UID" style="font-size:18px;margin-bottom:8px;text-align:left;padding:12px 14px;">
+      <button class="btn btn-ghost mb8" onclick="adminLookup()">Look Up \u2192</button>
+      <div id="assign-result"></div>
+      <div id="assign-form" style="display:none;">
+        <select id="assign-sec" class="sel"><option value="0101">Section 0101 (9 AM)</option><option value="0102">Section 0102 (10 AM)</option><option value="0103">Section 0103 (11 AM)</option></select>
+        <select id="assign-grp" class="sel"></select>
+        <select id="assign-role" class="sel"><option value="telecommuter">\ud83c\udfe0 Telecommuter PM</option><option value="computing">\ud83d\udda5 On-Premises Computing</option><option value="network">\ud83d\udd0c On-Premises Network</option><option value="cloud">\u2601 Cloud Services Admin</option></select>
+        <button class="btn btn-primary" onclick="adminDoAssign()">Assign \u2713</button>
+      </div>
+    </div>
+    <div id="atab-remove" style="display:none;">
+      <div class="tag mb8">Remove a Student</div>
+      <div class="sub mb12">Enter UID to unassign from their current group.</div>
+      <div class="flex gap8"><input id="remove-uid" class="rf" type="number" inputmode="numeric" placeholder="UID"><button class="btn btn-danger btn-sm" onclick="adminRemove()">Unassign</button></div>
+      <div id="remove-result" class="sub mt8" style="display:none;"></div>
+    </div>
+    <div id="atab-proj" style="display:none;">
+      <div class="tag mb8">Projector View</div>
+      <div class="sub mb12">Each projector view includes the group board AND a live QR code sidebar \u2014 no need to switch screens.</div>
+      <div class="sp">
+        <a id="plink-0101" href="" target="_blank" class="btn btn-ghost">Open 0101 Board \u2197</a>
+        <a id="plink-0102" href="" target="_blank" class="btn btn-ghost">Open 0102 Board \u2197</a>
+        <a id="plink-0103" href="" target="_blank" class="btn btn-ghost">Open 0103 Board \u2197</a>
+      </div>
+      <div class="divider"></div>
+      <div class="tag mb8">Student QR Code</div>
+      <div class="qr-box"><img id="admin-qr" src="" alt="QR"><div><div id="admin-qr-url" class="qr-url mb8"></div><button class="btn btn-ghost btn-sm" onclick="copyURL()">Copy link</button></div></div>
+    </div>
+    <div id="atab-danger" style="display:none;">
+      <div class="dz">
+        <div class="tag red mb8">Danger Zone</div>
+        <div class="sub mb12">Wipes all group assignments for a section. Cannot be undone.</div>
+        <div class="sp">
+          <button class="btn btn-danger" onclick="adminReset('0101')">Reset Section 0101</button>
+          <button class="btn btn-danger" onclick="adminReset('0102')">Reset Section 0102</button>
+          <button class="btn btn-danger" onclick="adminReset('0103')">Reset Section 0103</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer><span>INST346 \u00b7 Lab 12 \u00b7 Technologies, Infrastructure &amp; Architecture</span><span id="sync-ts">\u2014</span></footer>
+<div id="toasts"></div>
+
+<script>
+const FIREBASE_URL   = 'https://inst346-lab11-default-rtdb.firebaseio.com';
+const ADMIN_PASSWORD = 'frezzo346';
+const GROUPS  = [1,2,3,4,5,6,7,8,9,10];
+const ROLES   = ['telecommuter','computing','network','cloud'];
+const POLL_MS = 3500;
+const SEC_HOUR = {'0101':9,'0102':10,'0103':11};
+const RM = {
+  telecommuter:{label:'Telecommuter PM',      short:'Telecommuter',icon:'\ud83c\udfe0',hex:'#58a6ff',bg:'rgba(88,166,255,.12)',css:'var(--r-tel)',cssBg:'var(--r-tel-bg)'},
+  computing:   {label:'On-Premises Computing',short:'Computing',   icon:'\ud83d\udda5',hex:'#3fb950',bg:'rgba(63,185,80,.12)', css:'var(--r-cmp)',cssBg:'var(--r-cmp-bg)'},
+  network:     {label:'On-Premises Network',  short:'Network',     icon:'\ud83d\udd0c',hex:'#bc8cff',bg:'rgba(188,140,255,.12)',css:'var(--r-net)',cssBg:'var(--r-net-bg)'},
+  cloud:       {label:'Cloud Services Admin', short:'Cloud',       icon:'\u2601\ufe0f', hex:'#ffa657',bg:'rgba(255,166,87,.12)', css:'var(--r-cld)',cssBg:'var(--r-cld-bg)'},
+};
+const STUDENT_DB = {"119632895":{"name":"Ayush Patel","section":"0101","lab11_role":"cloud"},"119730232":{"name":"Rohan Saini","section":"0101","lab11_role":"cloud"},"119681312":{"name":"Seena Rad","section":"0101","lab11_role":"cloud"},"119769317":{"name":"Brian Monge","section":"0101","lab11_role":"cloud"},"121376930":{"name":"Yalemzewed Wodaje","section":"0101","lab11_role":"cloud"},"118003214":{"name":"Sesi Gbenu","section":"0101","lab11_role":"cloud"},"121378583":{"name":"Nesra Muhammed","section":"0101","lab11_role":"cloud"},"118983004":{"name":"Aiden Anderson","section":"0101","lab11_role":"cloud"},"121377050":{"name":"Kenia Aviles Quintero","section":"0101","lab11_role":"computing"},"119766989":{"name":"Manasa Chekuri","section":"0101","lab11_role":"computing"},"121296849":{"name":"Jose Tavara","section":"0101","lab11_role":"computing"},"118625508":{"name":"John Watkins","section":"0101","lab11_role":"computing"},"121359704":{"name":"Jason Harrington","section":"0101","lab11_role":"computing"},"120059575":{"name":"Johnny Zhu","section":"0101","lab11_role":"computing"},"118220772":{"name":"Michael Brown","section":"0101","lab11_role":"computing"},"115387348":{"name":"Anjali Khatri","section":"0101","lab11_role":"computing"},"119594247":{"name":"Nikkolas Duong","section":"0101","lab11_role":"computing"},"121383815":{"name":"Jason Espinoza","section":"0101","lab11_role":"computing"},"122274501":{"name":"Tatiana Moubray","section":"0101","lab11_role":"network"},"118938493":{"name":"Selamawit Asmare","section":"0101","lab11_role":"network"},"118061368":{"name":"Kirubel Mogese","section":"0101","lab11_role":"network"},"118902616":{"name":"Heaven Brhanu","section":"0101","lab11_role":"telecommuter"},"120084348":{"name":"Ibrahim Zayed","section":"0101","lab11_role":"telecommuter"},"120279638":{"name":"Mayowa Akinrodoye","section":"0101","lab11_role":"telecommuter"},"120418204":{"name":"Winner Ukawoko","section":"0101","lab11_role":"telecommuter"},"120955419":{"name":"Lizzie Colvin","section":"0101","lab11_role":"telecommuter"},"121305718":{"name":"Jordan Xiong","section":"0101","lab11_role":"telecommuter"},"122282483":{"name":"Adela Wallis","section":"0102","lab11_role":"cloud"},"120235313":{"name":"Louise Tshitenge","section":"0102","lab11_role":"cloud"},"120572098":{"name":"William Chen","section":"0102","lab11_role":"cloud"},"119480878":{"name":"Yves Hyppolite","section":"0102","lab11_role":"network"},"120080364":{"name":"Noga Lavy","section":"0102","lab11_role":"computing"},"119748992":{"name":"Raymond Tran","section":"0102","lab11_role":"network"},"119569153":{"name":"Daphne Lee","section":"0102","lab11_role":"network"},"119769263":{"name":"Nevra Diker","section":"0102","lab11_role":"computing"},"119501511":{"name":"Kayley Hughes","section":"0102","lab11_role":"cloud"},"119361603":{"name":"Dhyey Patel","section":"0102","lab11_role":"telecommuter"},"116654265":{"name":"Seungjun Kang","section":"0102","lab11_role":"cloud"},"118758817":{"name":"Alfonso Lopez-Aguilera","section":"0102","lab11_role":"telecommuter"},"118898995":{"name":"Axel Balestrieri","section":"0102","lab11_role":"cloud"},"119900147":{"name":"Stephnie Rozario","section":"0102","lab11_role":"computing"},"121343185":{"name":"Talha Muhammad","section":"0102","lab11_role":"cloud"},"121305145":{"name":"Abdullah Shirzoi","section":"0102","lab11_role":"cloud"},"121360564":{"name":"Allen Gaskins","section":"0102","lab11_role":"cloud"},"119488836":{"name":"Alan Kim","section":"0102","lab11_role":"telecommuter"},"116674065":{"name":"Honore Mubiayi","section":"0102","lab11_role":"cloud"},"118911076":{"name":"Brent Sare","section":"0102","lab11_role":"computing"},"120354441":{"name":"Bryan Amaro","section":"0102","lab11_role":"computing"},"122293748":{"name":"Jeffrey Navarro","section":"0102","lab11_role":"telecommuter"},"120943850":{"name":"Connor MacLeod","section":"0102","lab11_role":"network"},"120337444":{"name":"Steve Rozario","section":"0102","lab11_role":"computing"},"119697009":{"name":"Evan Yee","section":"0102","lab11_role":"network"},"119481028":{"name":"Ahmad Jamshidi","section":"0102","lab11_role":"computing"},"121303202":{"name":"Angela Vaught","section":"0102","lab11_role":"computing"},"120463754":{"name":"Oluwanifemi Elesinnla","section":"0102","lab11_role":"cloud"},"119921586":{"name":"Anthony Zhou","section":"0102","lab11_role":"network"},"119067918":{"name":"Johnathan Cook","section":"0102","lab11_role":"cloud"},"118775579":{"name":"Khadim Lo","section":"0102","lab11_role":"cloud"},"119881781":{"name":"Andrew Le","section":"0102","lab11_role":"network"},"119778364":{"name":"Ashwin Pugazhendhi","section":"0102","lab11_role":"computing"},"119776131":{"name":"April Seach","section":"0102","lab11_role":"telecommuter"},"121318404":{"name":"Sukontho Rozario","section":"0102","lab11_role":"network"},"118511078":{"name":"Lamar Logan","section":"0102","lab11_role":"telecommuter"},"119619964":{"name":"Katelyn Banaszek","section":"0103","lab11_role":"computing"},"119680759":{"name":"Manjeet Nirula","section":"0103","lab11_role":"cloud"},"118773940":{"name":"Gabriela Perez Thomas","section":"0103","lab11_role":"network"},"120723194":{"name":"Maximo Jih-Vieira","section":"0103","lab11_role":"network"},"118480381":{"name":"Luis Villatoro","section":"0103","lab11_role":"telecommuter"},"121294005":{"name":"Ethan Patrick","section":"0103","lab11_role":"cloud"},"119779163":{"name":"Het Patel","section":"0103","lab11_role":"computing"},"117278286":{"name":"Eric Kong","section":"0103","lab11_role":"telecommuter"},"121383716":{"name":"Ayomide Ogunbode","section":"0103","lab11_role":"computing"},"119820544":{"name":"Zachery Chun","section":"0103","lab11_role":"telecommuter"},"118966984":{"name":"Caitlin Goh","section":"0103","lab11_role":"cloud"},"118811352":{"name":"Grant Tran","section":"0103","lab11_role":"cloud"},"119788233":{"name":"Agustin Saldana","section":"0103","lab11_role":"network"},"119543054":{"name":"Nicholas Stevenson","section":"0103","lab11_role":"network"},"121571250":{"name":"Emilio Sanchez San Martin","section":"0103","lab11_role":"computing"},"12229645":{"name":"Vinindi Withanage","section":"0103","lab11_role":"telecommuter"},"119771020":{"name":"Zachary Tong","section":"0103","lab11_role":"telecommuter"},"119665725":{"name":"Dylan Wu","section":"0103","lab11_role":"telecommuter"},"120328800":{"name":"Dante Angel","section":"0103","lab11_role":"cloud"},"120900457":{"name":"Jolina Dang","section":"0103","lab11_role":"computing"},"119672938":{"name":"Rahban Gebremedhin","section":"0103","lab11_role":"cloud"},"119670132":{"name":"Daniel Mulat","section":"0103","lab11_role":"cloud"},"120067136":{"name":"Pranav Rishi","section":"0103","lab11_role":"computing"},"118976938":{"name":"Kelly Kameni-Ngotcho","section":"0103","lab11_role":"network"},"121303189":{"name":"Etsegenet Lemma","section":"0103","lab11_role":"cloud"},"117925128":{"name":"Joshua Tagliere","section":"0103","lab11_role":"cloud"},"122277786":{"name":"Ehimhen Okojie","section":"0103","lab11_role":"telecommuter"},"121316509":{"name":"Luis Jovel Lainez","section":"0103","lab11_role":"cloud"},"118872063":{"name":"Mohamed Hibu","section":"0103","lab11_role":"network"},"119892121":{"name":"Syed Rayn Ali","section":"0103","lab11_role":"computing"},"118917771":{"name":"Zay","section":"0103","lab11_role":"telecommuter"},"119695678":{"name":"Lina Romero-Fabian","section":"0103","lab11_role":"network"},"maberra":{"name":"Michael Aberra","section":"0101","lab11_role":"cloud"},"lberhan2":{"name":"Lidia Berhane","section":"0101","lab11_role":"telecommuter"},"ksunwar":{"name":"Kristi Sunwar","section":"0101","lab11_role":"telecommuter"}};
+
+let S = {uid:null,student:null,targetGroup:null,data:{},connected:true,adminSec:'0101',adminTab:'board',assignUID:null};
+let adminOpen = false;
+const urlParams = new URLSearchParams(window.location.search);
+const PROJ_SEC  = urlParams.get('board');
+
+function fbURL(sec){return FIREBASE_URL+'/lab12/'+sec+'.json';}
+function fbSlotURL(sec,grp,role){return FIREBASE_URL+'/lab12/'+sec+'/'+grp+'/'+role+'.json';}
+function blank(){const d={};GROUPS.forEach(g=>{d[g]={telecommuter:null,computing:null,network:null,cloud:null};});return d;}
+function norm(raw){const d=blank();if(!raw)return d;GROUPS.forEach(g=>{if(!raw[g])return;ROLES.forEach(r=>{d[g][r]=raw[g][r]||null;});});return d;}
+
+async function loadSec(sec){
+  try{const res=await fetch(fbURL(sec));if(!res.ok)throw new Error(res.status);S.data[sec]=norm(await res.json());S.connected=true;}
+  catch(e){if(!S.data[sec])S.data[sec]=blank();S.connected=false;}
+}
+
+async function claimAtomic(sec,grp,role,payload){
+  const url=fbSlotURL(sec,grp,role);
+  try{
+    const gr=await fetch(url,{headers:{'X-Firebase-ETag':'true'}});
+    if(!gr.ok)return{ok:false,reason:'error'};
+    const etag=gr.headers.get('ETag');
+    const cur=await gr.json();
+    if(cur!==null)return{ok:false,reason:'taken'};
+    const pr=await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(payload)});
+    if(pr.status===412)return{ok:false,reason:'race'};
+    if(!pr.ok)return{ok:false,reason:'error'};
+    if(!S.data[sec])S.data[sec]=blank();
+    S.data[sec][grp][role]=payload;
+    S.connected=true;return{ok:true};
+  }catch(e){S.connected=false;return{ok:false,reason:'error'};}
+}
+
+async function saveSec(sec){
+  try{const res=await fetch(fbURL(sec),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.data[sec])});S.connected=res.ok;return res.ok;}
+  catch(e){S.connected=false;return false;}
+}
+
+function filled(sec,grp){return ROLES.filter(r=>S.data[sec]?.[grp]?.[r]!==null).length;}
+function isFull(sec,grp){return filled(sec,grp)>=4;}
+function findIn(sec,uid){const d=S.data[sec];if(!d)return null;for(const g of GROUPS)for(const r of ROLES)if(d[g]?.[r]?.uid===String(uid))return{group:g,role:r};return null;}
+function findAny(uid){for(const s of['0101','0102','0103']){const p=findIn(s,uid);if(p)return{...p,section:s};}return null;}
+function allExpertFull(sec,role){return GROUPS.every(g=>S.data[sec]?.[g]?.[role]!==null);}
+function secAllowed(sec){const h=new Date().getHours();const exp=SEC_HOUR[sec];return h===exp||(h===exp-1&&new Date().getMinutes()>=45);}
+function fn(name){if(!name)return'?';const p=name.trim().split(' ');const f=p[0];return f.length>10?f.substring(0,9)+'\u2026':f;}
+
+const VIEWS=['view-landing','view-identify','view-pick-role','view-confirmed','view-error','view-board'];
+function goTo(id,data={}){
+  const cur=document.querySelector('.view.active');
+  if(cur){cur.classList.add('out');setTimeout(()=>cur.classList.remove('active','out'),200);}
+  Object.assign(S,data);
+  setTimeout(()=>{
+    const nxt=document.getElementById(id);nxt.classList.add('active');
+    if(id==='view-identify')renderIdentify();
+    if(id==='view-pick-role')renderPickRole();
+    if(id==='view-confirmed')renderConfirmed();
+    if(id==='view-board')renderBoard();
+  },110);
+}
+
+async function lookupUID(){
+  const raw=document.getElementById('uid-input').value.trim();
+  if(!raw){landErr('Please enter your UID.');return;}
+  const btn=document.getElementById('lookup-btn');
+  btn.disabled=true;btn.textContent='Looking up\u2026';
+  const stu=STUDENT_DB[raw];
+  if(!stu){btn.disabled=false;btn.textContent='Find My Record \u2192';errScreen('\ud83e\udd14','red','UID Not Found','We couldn\'t find UID '+raw+' in our records. Double-check your Canvas UID, or see your TA.');return;}
+  if(stu.duplicate){btn.disabled=false;btn.textContent='Find My Record \u2192';errScreen('\u26a0\ufe0f','amber','TA Verification Needed','Hi '+stu.name+'! Your record needs a quick correction. Please see your TA who will assign your group directly.');return;}
+  if(!secAllowed(stu.section)){
+    const h=SEC_HOUR[stu.section];
+    const hLabel=h===9?'9:00 AM':h===10?'10:00 AM':'11:00 AM';
+    btn.disabled=false;btn.textContent='Find My Record \u2192';
+    errScreen('\ud83d\udd50','amber','Wrong Session Time','Hi '+stu.name+'! Your section ('+stu.section+') starts at '+hLabel+'. You\'re a bit early! Please return then, or see your TA if you\'re attending a different session today.');return;
+  }
+  S.uid=raw;S.student=stu;
+  await loadSec(stu.section);
+  const ex=findIn(stu.section,raw);
+  if(ex){btn.disabled=false;btn.textContent='Find My Record \u2192';goTo('view-confirmed',{confirmedGroup:ex.group,confirmedRole:ex.role,confirmedSwitched:false});return;}
+  btn.disabled=false;btn.textContent='Find My Record \u2192';
+  goTo('view-identify');
+}
+
+function landErr(msg){const e=document.getElementById('land-err');e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
+function errScreen(emoji,cls,msg){document.getElementById('err-emoji').textContent=emoji;document.getElementById('err-tag').className='tag '+cls+' tc';document.getElementById('err-tag').textContent=msg.split('.')[0];document.getElementById('err-msg').textContent=msg;goTo('view-error');}
+
+function renderIdentify(){
+  const {uid,student:stu}=S;
+  const rm=RM[stu.lab11_role]||RM.cloud;
+  const data=S.data[stu.section];
+  const expFull=allExpertFull(stu.section,stu.lab11_role);
+  document.getElementById('sec-label-board').textContent='Section '+stu.section+' Groups';
+  document.getElementById('id-card').innerHTML=
+    '<div class="id-av" style="background:'+rm.hex+';">'+stu.name[0].toUpperCase()+'</div>'
+    +'<div><div class="id-name">'+stu.name+'</div>'
+    +'<div class="id-meta"><span class="sec-badge">'+stu.section+'</span>&nbsp;Lab 11: '+rm.icon+' '+rm.short+'</div></div>'
+    +'<div class="id-chip" style="background:'+rm.bg+';color:'+rm.hex+';">'+rm.icon+' '+rm.short+'</div>';
+  const banEl=document.getElementById('expert-full-banner');
+  if(expFull){banEl.innerHTML='<div class="banner amber"><div class="banner-title">\u26a1 All '+rm.label+' slots are taken</div><div class="banner-sub">Every group already has a '+rm.short+' expert. You\u2019ll need to join a group in a different role \u2014 look for groups with open spots below.</div></div>';}
+  else{banEl.innerHTML='';}
+  let html='';
+  GROUPS.forEach(g=>{
+    const full=isFull(stu.section,g);
+    const expOpen=!full&&data[g]?.[stu.lab11_role]===null;
+    const f=filled(stu.section,g);
+    let slots='';
+    ROLES.forEach(r=>{
+      const slot=data[g]?.[r];
+      const rm2=RM[r];
+      let nc='gc-name',nt='open';
+      if(slot){nc='gc-name';nt=fn(slot.name);}
+      else if(r===stu.lab11_role&&!full){nc='gc-name expert-open';nt='\u2190 your spot';}
+      else{nc='gc-name empty';nt='open';}
+      slots+='<div class="gc-slot">'
+        +'<div class="gc-bar" style="background:'+(slot?rm2.hex:'var(--border2)')+'"></div>'
+        +'<div class="gc-icon">'+rm2.icon+'</div>'
+        +'<div class="'+nc+'">'+nt+'</div>'
+        +'</div>';
+    });
+    const cc='group-card'+(full?' full':'')+(expOpen?' has-expert':'');
+    const oc=full?'':'onclick="pickGroup('+g+')"';
+    html+='<div class="'+cc+'" '+oc+'>'
+      +'<div class="gc-head"><div class="gc-num">Group '+g+'</div><div class="gc-count">'+(full?'FULL':f+'/4')+'</div></div>'
+      +'<div>'+slots+'</div></div>';
+  });
+  document.getElementById('group-grid').innerHTML=html;
+}
+
+async function pickGroup(grp){
+  const {uid,student:stu}=S;S.targetGroup=grp;
+  await loadSec(stu.section);
+  if(isFull(stu.section,grp)){toast('Group '+grp+' just filled up \u2014 pick another!','warn');renderIdentify();return;}
+  if(S.data[stu.section]?.[grp]?.[stu.lab11_role]===null){await doClaim(grp,stu.lab11_role,false);}
+  else{goTo('view-pick-role');}
+}
+
+function renderPickRole(){
+  const {student:stu,targetGroup:g}=S;
+  const data=S.data[stu.section];
+  const rm=RM[stu.lab11_role]||{};
+  document.getElementById('conflict-msg').textContent='The '+rm.label+' slot in Group '+g+' is already taken. Pick any open role below to join Group '+g+', or go back and try a different group.';
+  document.getElementById('conflict-group-label').textContent='Group '+g;
+  let html='';
+  ROLES.forEach(r=>{
+    const slot=data[g]?.[r];const isTaken=slot!==null;const isExp=r===stu.lab11_role;const rm2=RM[r];
+    const rc='slot-row'+(isTaken?' taken':' open-slot')+(isExp?' expert':'');
+    const ca=isTaken?'':'onclick="doClaim('+g+',\''+r+'\',true)"';
+    html+='<div class="'+rc+'" style="--rc:'+rm2.css+';--rc-bg:'+rm2.cssBg+';" '+ca+'>'
+      +'<div class="slot-icon" style="background:'+rm2.bg+';">'+rm2.icon+'</div>'
+      +'<div><div class="slot-role" style="color:'+(isTaken?'var(--txt3)':rm2.hex)+'">'+rm2.label+'</div>'
+      +'<div class="slot-person">'+(isTaken?(slot.name||'Taken'):'Open \u2014 tap to claim')+'</div></div>'
+      +(isTaken?'':'<div class="slot-arrow" style="color:'+rm2.hex+'">\u2192</div>')
+      +'</div>';
+  });
+  document.getElementById('slot-list').innerHTML=html;
+}
+
+async function doClaim(grp,role,switched){
+  const {uid,student:stu}=S;
+  const ex=findIn(stu.section,uid);
+  if(ex){toast('You\u2019re already in Group '+ex.group+'!','warn');goTo('view-confirmed',{confirmedGroup:ex.group,confirmedRole:ex.role,confirmedSwitched:false});return;}
+  const payload={uid:String(uid),name:stu.name,originalRole:stu.lab11_role,assignedRole:role,ts:Date.now()};
+  const res=await claimAtomic(stu.section,grp,role,payload);
+  if(res.reason==='race'||res.reason==='taken'){
+    toast(res.reason==='race'?'Another student just grabbed that spot \u2014 try again!':'That slot was just taken!','err');
+    await loadSec(stu.section);if(switched)renderPickRole();else renderIdentify();return;
+  }
+  if(!res.ok){toast('Connection error \u2014 please try again','err');return;}
+  goTo('view-confirmed',{confirmedGroup:grp,confirmedRole:role,confirmedSwitched:switched});
+}
+
+function renderConfirmed(){
+  const{uid,student:stu,confirmedGroup:g,confirmedRole:r,confirmedSwitched:sw}=S;if(!stu)return;
+  const rm=RM[r]||RM.cloud;
+  document.getElementById('conf-name').textContent=stu.name;
+  document.getElementById('conf-section').textContent='Section '+stu.section;
+  document.getElementById('conf-num').textContent='Group '+g;
+  document.getElementById('conf-num').style.color=rm.hex;
+  document.getElementById('conf-role').textContent=rm.icon+' '+rm.label;
+  const swEl=document.getElementById('conf-switched');
+  if(sw&&r!==stu.lab11_role){swEl.style.display='block';swEl.textContent='Note: Joined as '+RM[r].short+' (your Lab 11 expertise was '+(RM[stu.lab11_role]?.short||stu.lab11_role)+').';}
+  else{swEl.style.display='none';}
+  const gData=S.data[stu.section]?.[g];
+  let mHtml='<div class="tag mb8">Your new group</div>';
+  ROLES.forEach(role=>{
+    const slot=gData?.[role];const rm2=RM[role];const isMe=slot?.uid===String(uid);
+    mHtml+='<div class="member-row"><span style="font-size:15px;">'+rm2.icon+'</span>'
+      +'<span style="font-size:12px;color:var(--txt2);width:80px;flex-shrink:0;">'+rm2.short+'</span>'
+      +'<span style="font-size:13px;font-weight:'+(isMe?700:400)+';color:'+(isMe?'var(--txt)':'var(--txt2)')+';">'
+      +(slot?slot.name:'<span style="color:var(--txt3);font-style:italic;">Open</span>')+(isMe?' \u2190 you':'')+'</span></div>';
+  });
+  document.getElementById('conf-members').innerHTML=mHtml;
+}
+
+function renderBoard(){
+  const sec=PROJ_SEC||'0101';const data=S.data[sec]||blank();
+  const base=window.location.href.split('?')[0];
+  document.getElementById('board-title').textContent=sec+' Section';
+  document.getElementById('proj-section').textContent=sec;
+  document.getElementById('proj-qr-img').src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&bgcolor=1c2230&color=f0f6fc&data='+encodeURIComponent(base);
+  document.getElementById('proj-qr-url').textContent=base;
+  const totalPlaced=GROUPS.reduce((s,g)=>s+filled(sec,g),0);
+  const fullGroups=GROUPS.filter(g=>isFull(sec,g)).length;
+  const totalStu=Object.values(STUDENT_DB).filter(x=>x.section===sec).length;
+  document.getElementById('proj-placed').textContent=totalPlaced+' / '+totalStu;
+  document.getElementById('proj-full').textContent=fullGroups+' / 10';
+  let html='';
+  GROUPS.forEach(g=>{
+    const f=filled(sec,g);
+    let slots='';
+    ROLES.forEach(r=>{const slot=data[g]?.[r];const rm2=RM[r];slots+='<div class="proj-slot"><div class="proj-slot-icon">'+rm2.icon+'</div><div class="proj-slot-name'+(slot?'':' empty')+'">'+(slot?slot.name:'open')+'</div></div>';});
+    html+='<div class="proj-card"><div class="proj-card-num"><span>'+g+'</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+(f===4?'var(--green)':'var(--txt3)')+';">'+f+'/4</span></div>'+slots+'</div>';
+  });
+  document.getElementById('proj-grid').innerHTML=html;
+}
+
+function openAdmin(){
+  if(!adminOpen){const pw=prompt('TA password:');if(!pw)return;if(pw!==ADMIN_PASSWORD){toast('Wrong password','err');return;}adminOpen=true;}
+  const base=window.location.href.split('?')[0];
+  ['0101','0102','0103'].forEach(s=>{document.getElementById('plink-'+s).href=base+'?board='+s;});
+  document.getElementById('admin-qr').src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&bgcolor=161b22&color=f0f6fc&data='+encodeURIComponent(base);
+  document.getElementById('admin-qr-url').textContent=base;
+  const sel=document.getElementById('assign-grp');sel.innerHTML=GROUPS.map(g=>'<option value="'+g+'">Group '+g+'</option>').join('');
+  document.getElementById('admin-overlay').classList.add('open');refreshBoard();
+}
+function closeAdmin(){document.getElementById('admin-overlay').classList.remove('open');}
+function copyURL(){navigator.clipboard.writeText(window.location.href.split('?')[0]);toast('Link copied \u2713','ok');}
+
+function adminTab(name){
+  S.adminTab=name;
+  ['board','assign','remove','proj','danger'].forEach((t,i)=>{
+    document.querySelectorAll('.atab')[i]?.classList.toggle('active',t===name);
+    document.getElementById('atab-'+t).style.display=t===name?'':'none';
+  });
+  if(name==='board')refreshBoard();
+}
+function adminBoardSec(sec){S.adminSec=sec;['0101','0102','0103'].forEach(s=>document.getElementById('abs-'+s).classList.toggle('active',s===sec));refreshBoard();}
+function refreshBoard(){
+  const sec=S.adminSec;const data=S.data[sec]||blank();let html='';
+  GROUPS.forEach(g=>{
+    const chips=ROLES.map(r=>{const slot=data[g]?.[r];const rm2=RM[r];if(!slot)return'<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--txt3);margin-right:4px;">'+rm2.icon+'\u2014</span>';const sw=slot.originalRole&&slot.originalRole!==slot.assignedRole;return'<span class="board-chip" style="background:'+rm2.hex+';" title="'+slot.name+'">'+rm2.icon+' '+fn(slot.name)+(sw?' \ud83d\udd04':'')+'</span>';}).join('');
+    const f=filled(sec,g);
+    html+='<div class="board-row"><span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;width:56px;flex-shrink:0;">Grp '+g+'</span><div style="flex:1;">'+chips+'</div><span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+(f===4?'var(--green)':'var(--txt3)')+';">'+f+'/4</span></div>';
+  });
+  document.getElementById('admin-board-content').innerHTML=html;
+}
+function adminLookup(){
+  const uid=document.getElementById('assign-uid').value.trim();const stu=STUDENT_DB[uid];
+  const res=document.getElementById('assign-result');const form=document.getElementById('assign-form');
+  if(!stu){res.innerHTML='<div class="sub" style="color:var(--red);">UID not found.</div>';form.style.display='none';return;}
+  S.assignUID=uid;const rm=RM[stu.lab11_role]||{};
+  res.innerHTML='<div class="id-card card-sm" style="margin:8px 0;"><div class="id-av" style="background:'+(rm.hex||'#888')+';font-size:14px;width:34px;height:34px;">'+stu.name[0]+'</div><div><div class="id-name" style="font-size:13px;">'+stu.name+'</div><div class="id-meta">Section: '+stu.section+' \u00b7 Lab11: '+(rm.icon||'')+' '+(rm.short||stu.lab11_role)+'</div></div></div>';
+  document.getElementById('assign-sec').value=stu.section;form.style.display='';
+}
+async function adminDoAssign(){
+  const uid=S.assignUID;const sec=document.getElementById('assign-sec').value;
+  const grp=parseInt(document.getElementById('assign-grp').value,10);const role=document.getElementById('assign-role').value;
+  if(!uid){toast('Look up a student first','err');return;}
+  const stu=STUDENT_DB[uid]||{name:uid,lab11_role:role};
+  for(const s of['0101','0102','0103']){await loadSec(s);GROUPS.forEach(g=>ROLES.forEach(r=>{if(S.data[s]?.[g]?.[r]?.uid===String(uid))S.data[s][g][r]=null;}));await saveSec(s);}
+  S.data[sec][grp][role]={uid:String(uid),name:stu.name,originalRole:stu.lab11_role,assignedRole:role,ts:Date.now(),override:true};
+  const ok=await saveSec(sec);if(ok){toast(stu.name+' \u2192 Group '+grp+' ('+role+') in '+sec+' \u2713','ok');refreshBoard();}
+}
+async function adminRemove(){
+  const uid=document.getElementById('remove-uid').value.trim();
+  const res=document.getElementById('remove-result');if(!uid){toast('Enter a UID','err');return;}
+  let removed=false;
+  for(const sec of['0101','0102','0103']){await loadSec(sec);GROUPS.forEach(g=>ROLES.forEach(r=>{if(S.data[sec]?.[g]?.[r]?.uid===String(uid)){S.data[sec][g][r]=null;removed=true;}}));if(removed){await saveSec(sec);break;}}
+  res.style.display='block';res.textContent=removed?'UID '+uid+' removed.':'UID '+uid+' not found in any group.';res.style.color=removed?'var(--green)':'var(--red)';if(removed)refreshBoard();
+}
+async function adminReset(sec){
+  if(!confirm('Reset ALL groups for section '+sec+'? Cannot be undone.'))return;
+  S.data[sec]=blank();const ok=await saveSec(sec);if(ok){toast('Section '+sec+' reset \u2713','ok');refreshBoard();}
+}
+
+function toast(msg,kind='ok'){const el=document.createElement('div');el.className='toast '+kind;el.textContent=msg;document.getElementById('toasts').appendChild(el);setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),350);},3200);}
+
+async function poll(){
+  const secs=PROJ_SEC?[PROJ_SEC]:['0101','0102','0103'];
+  for(const sec of secs){const before=JSON.stringify(S.data[sec]);await loadSec(sec);const after=JSON.stringify(S.data[sec]);
+    if(before!==after){const cur=document.querySelector('.view.active')?.id;
+      if(cur==='view-identify')renderIdentify();if(cur==='view-pick-role')renderPickRole();
+      if(cur==='view-board')renderBoard();if(cur==='view-confirmed')renderConfirmed();
+      if(S.adminTab==='board'&&document.getElementById('admin-overlay').classList.contains('open'))refreshBoard();}}
+  document.getElementById('sync-ts').textContent=new Date().toLocaleTimeString();
+  document.querySelectorAll('.dot').forEach(d=>d.classList.toggle('off',!S.connected));
+}
+
+async function init(){
+  if(PROJ_SEC&&['0101','0102','0103'].includes(PROJ_SEC)){document.body.classList.add('projector');await loadSec(PROJ_SEC);goTo('view-board');setInterval(poll,POLL_MS);return;}
+  Promise.all(['0101','0102','0103'].map(loadSec));
+  document.getElementById('uid-input').addEventListener('keydown',e=>{if(e.key==='Enter')lookupUID();});
+  document.getElementById('uid-input').focus();
+  setInterval(poll,POLL_MS);
+}
+init();
+</script>
+</body>
+</html>
